@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Personal workflow rules (not project content)
+CLAUDE.md
+
+# Datasets, wherever they are placed. Never committed. The leading slash matters:
+# a bare "data/" would also hide the contactless_vitals/data/ package.
+/data/
+*.avi
+*.mp4
+ground_truth.txt
+
+# Downloaded model weights (fetched on first run)
+/models/
+
+# Runtime output, which can hold traces derived from dataset videos
+/out/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

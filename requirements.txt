@@ -1,0 +1,11 @@
+# Python 3.12
+numpy>=2.0
+scipy>=1.13
+matplotlib>=3.8
+python-dotenv>=1.0
+# Pinned: the API changed sharply across releases. Installs opencv-contrib-python,
+# so do not add opencv-python as well (the two conflict).
+mediapipe==1.2.2
+# Testing. scikit-image supplies the public-domain portrait for the MediaPipe test.
+pytest>=8.0
+scikit-image>=0.24
