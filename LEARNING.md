@@ -1,6 +1,5 @@
 # Learning Notes: How a Camera Sees a Pulse
 
-These notes explain the ideas behind this project in plain language, so you can walk a client through them without reading the code.
 
 ## The short version
 
