@@ -22,3 +22,6 @@ ground_truth.txt
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Local workspace files, not part of the project
+.vscode/

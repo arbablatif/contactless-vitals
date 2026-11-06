@@ -1,4 +1,4 @@
-# Contactless Vitals
+# Contactless Vitals: Camera-Based Pulse Extraction with rPPG in Python
 
 A Python package that extracts a pulse waveform from ordinary face video, using remote photoplethysmography (rPPG). It tracks the face, measures the colour of three skin regions frame by frame, and separates the tiny pulse signal from motion and lighting changes with three classic algorithms: GREEN, CHROM and POS.
 
@@ -200,3 +200,14 @@ This project makes no LLM or other API calls, so it needs no API keys.
 - Bobbia, Macwan, Benezeth, Mansouri, Dubois. *Unsupervised skin tissue segmentation for remote photoplethysmography.* Pattern Recognition Letters, 2017. (UBFC-rPPG dataset.)
 
 The portrait used in the tests is the NASA astronaut image bundled with scikit-image, which is in the public domain.
+
+## License
+
+The code is MIT licensed. See [LICENSE](LICENSE). Third-party datasets, papers and models are not covered and keep their own terms.
+
+## Related projects
+
+- [dsp-copilot](https://github.com/arbablatif/dsp-copilot): LLM agent for signal processing on CSV and WAV files
+- [predictive-maintenance-agent](https://github.com/arbablatif/predictive-maintenance-agent): bearing fault diagnosis, RUL prediction and verified tickets
+
+Project page: [https://arbablatif.github.io/projects/contactless-vitals/](https://arbablatif.github.io/projects/contactless-vitals/). More work at [arbablatif.github.io](https://arbablatif.github.io/).
