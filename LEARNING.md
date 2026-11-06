@@ -60,7 +60,7 @@ Take the green channel, and that's it.
 
 - **Pulse:** the strongest of the three channels.
 - **Motion and lighting:** no protection at all. A brightness change goes straight into the output.
-- **When it wins:** when nothing is disturbing the signal, because it adds no noise from weaker channels. In our clean test it scored 26.1 dB against 18.6 dB for the others.
+- **When it wins:** when nothing is disturbing the signal, because it adds no noise from weaker channels. In our clean test it scored 26.1 dB against about 18.6 dB for the others.
 - **When it fails:** with brightness flicker inside the band it fell to -15.9 dB, meaning the flicker had about 40 times the power of the pulse.
 
 ### CHROM: make the distortion cancel
@@ -139,10 +139,15 @@ Why use short windows at all? Lighting and motion keep changing, so `alpha` must
 
 **What the results do and don't prove.** Synthetic videos follow the same model the algorithms assume. They prove the code does what the theory says. They don't prove it works on real people, which is what UBFC-rPPG is for.
 
+**A real recording.** One UBFC-rPPG subject has been run so far. POS correlated 0.79 with the contact sensor, GREEN 0.74 and CHROM 0.77. A correlation of 1 would be a perfect match.
+
+**Why check against chance?** Two rhythmic signals can look alike by accident. So we slide the sensor signal out of step and score it again. That gave about 0.35, and 0.48 at most, so 0.79 is a real match. Without that comparison, the 0.79 would be much harder to interpret.
+
 ## Findings worth discussing with a client
 
 - **There's no single best algorithm.** GREEN wins in calm conditions, and CHROM and POS win when things move. Robustness has a real cost, about 7.5 dB in our clean test.
-- **Darker skin gave lower quality, even in simulation.** Dark skin with full pulse strength scored 12.6 to 13.4 dB for CHROM and POS, against about 22 dB for light skin. At half strength they fell to 6.8 and 8.2 dB. There's less reflected light for the same sensor noise, and CHROM and POS depend on the dim blue channel. Better lighting helps; code alone doesn't fully fix this. Any real product must be tested across skin tones.
+- **Darker skin gave lower quality, even in simulation.** Dark skin with full pulse strength scored 12.6 to 13.4 dB for CHROM and POS, against about 22 dB for light skin. At half strength they fell to 6.9 and 8.2 dB. There's less reflected light for the same sensor noise, and CHROM and POS depend on the dim blue channel. Better lighting helps; code alone doesn't fully fix this. Any real product must be tested across skin tones.
+- **Real data finds what simulation can't.** The first real file had uneven timestamps, with a repeated time and a 0.22-second jump. That stopped the loader and made the frame rate read 26 Hz instead of 29 Hz. Our synthetic videos had perfect timing, so they could never have shown this. Using the recorded times, rather than assuming an even rate, gave a POS correlation of 0.79 instead of 0.70.
 - **Video quality is part of the system.** Compression, low light and auto-exposure can all destroy a signal of 1 to 2 grey levels. The camera setup matters as much as the algorithm.
 
 ## Questions a client might ask
@@ -155,7 +160,7 @@ Why use short windows at all? Lighting and motion keep changing, so `alpha` must
 
 **Does it record anyone's face?** The pipeline only needs colour averages. For this project, dataset videos stay local and are never committed, and no figures show a participant's face.
 
-**How accurate is it?** Not known yet. The waveform works on synthetic data. Accuracy on real people needs the UBFC-rPPG run, and heart-rate accuracy needs the next stage.
+**How accurate is it?** Not known yet. On one real person the waveform clearly follows a contact sensor, but one recording can't establish accuracy. That needs more subjects, and heart-rate accuracy needs the next stage.
 
 ## Glossary
 

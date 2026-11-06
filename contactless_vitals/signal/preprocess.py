@@ -11,12 +11,26 @@ from scipy.sparse.linalg import spsolve
 
 
 def estimate_fs(t: np.ndarray) -> float:
-    """Sampling rate from timestamps. The median ignores occasional dropped frames."""
+    """Sampling rate from timestamps, ignoring dropped-frame gaps.
+
+    This uses the mean step, not the median. Real capture timestamps can bunch
+    into short and long steps, and the median then lands on one of those groups:
+    on a real recording it gave 26 Hz for a true rate of 29 Hz. Steps over 1.5
+    times the median are gaps, not the normal rhythm, so they are left out.
+    """
     dt = np.diff(np.asarray(t, dtype=float))
     dt = dt[dt > 0]
     if dt.size == 0:
         raise ValueError("Need at least two increasing timestamps to estimate the rate.")
-    return float(1.0 / np.median(dt))
+    # Rounded because truncated lengths such as int(60 * fs) would otherwise turn on
+    # float noise: 29.9999999999999 Hz gives 1799 and 30 Hz gives 1800.
+    return round(float(1.0 / dt[dt <= 1.5 * np.median(dt)].mean()), 6)
+
+
+def first_of_each_time(t: np.ndarray) -> np.ndarray:
+    """Mask keeping one sample per timestamp, as interpolation needs rising times."""
+    t = np.asarray(t, dtype=float)
+    return np.concatenate(([True], np.diff(t) > 0))
 
 
 def to_uniform_grid(
@@ -50,6 +64,8 @@ def to_uniform_grid(
     good = np.all(np.isfinite(x2), axis=1)
     if good.sum() >= 2:
         tg, xg = t[good], x2[good]
+        unique = first_of_each_time(tg)
+        tg, xg = tg[unique], xg[unique]
         for c in range(x2.shape[1]):
             out[:, c] = np.interp(grid_t, tg, xg[:, c], left=np.nan, right=np.nan)
         # Blank out grid points that fall inside a gap too long to trust.

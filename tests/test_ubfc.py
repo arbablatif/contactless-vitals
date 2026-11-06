@@ -17,6 +17,7 @@ from contactless_vitals.extract import cached_rgb_trace, extract_rgb_trace
 from contactless_vitals.pipeline import COMBINED, run_rppg
 from contactless_vitals.quality import (
     correlation_with_lag,
+    shifted_correlations,
     snr_at_known_frequency,
     windowed_snr,
 )
@@ -59,7 +60,7 @@ def test_ground_truth_rows_are_read_in_order(dataset):
         ("1 2 3\n4 5\n0 1 2\n", "differ in length"),
         ("1 2 x\n4 5 6\n0 1 2\n", "non-numeric"),
         ("1 2 nan\n4 5 6\n0 1 2\n", "NaN"),
-        ("1 2 3\n4 5 6\n0 2 1\n", "does not always increase"),
+        ("1 2 3\n4 5 6\n0 2 1\n", "goes backwards"),
     ],
 )
 def test_bad_ground_truth_stops_with_a_clear_message(tmp_path, text, message):
@@ -67,6 +68,12 @@ def test_bad_ground_truth_stops_with_a_clear_message(tmp_path, text, message):
     path.write_text(text)
     with pytest.raises(ubfc.GroundTruthFormatError, match=message):
         ubfc.read_ground_truth(path)
+
+
+def test_repeated_time_is_accepted_as_in_real_files(tmp_path):
+    path = tmp_path / "ground_truth.txt"
+    path.write_text("1 2 3\n70 70 70\n0 1 1\n")
+    assert ubfc.read_ground_truth(path).t.tolist() == [0.0, 1.0, 1.0]
 
 
 def test_video_round_trip_is_pixel_exact(tmp_path):
@@ -151,3 +158,25 @@ def test_instructions_name_the_source_and_citation():
 
 def test_frame_times_match_spec():
     assert frame_times(SPEC).size == 240
+
+
+def test_shifted_correlations_sit_below_a_true_match():
+    rng = np.random.default_rng(0)
+    fs = 30.0
+    t = np.arange(1500) / fs
+    # A drifting rhythm, so a shifted copy really is out of step.
+    phase = 2 * np.pi * np.cumsum(1.5 + 0.3 * np.sin(2 * np.pi * 0.07 * t)) / fs
+    reference = np.sin(phase)
+    x = reference + 0.3 * rng.standard_normal(t.size)
+    chance = shifted_correlations(x, reference, fs)
+    assert chance.size == 22
+    assert np.median(chance) < correlation_with_lag(x, reference, fs)[0] - 0.2
+
+
+def test_snr_does_not_depend_on_float_noise_in_the_rate():
+    # At 1.2 Hz, bins sit exactly on the edge of the signal band.
+    rng = np.random.default_rng(0)
+    t = np.arange(900) / 30.0
+    x = np.sin(2 * np.pi * 1.2 * t) + 0.5 * rng.standard_normal(t.size)
+    scores = [snr_at_known_frequency(x, 30.0 + d, 1.2) for d in (-1e-13, 0.0, 1e-13)]
+    assert max(scores) - min(scores) < 1e-6

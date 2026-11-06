@@ -101,9 +101,10 @@ def reference_on_grid(
     result: RppgResult, truth: ubfc.GroundTruth, cfg: SignalConfig
 ) -> np.ndarray:
     """Contact PPG resampled to the rPPG grid, filtered the same way, unit variance."""
-    from contactless_vitals.signal.preprocess import bandpass
+    from contactless_vitals.signal.preprocess import bandpass, first_of_each_time
 
-    x = np.interp(result.t, truth.t, truth.ppg)
+    unique = first_of_each_time(truth.t)
+    x = np.interp(result.t, truth.t[unique], truth.ppg[unique])
     x = bandpass(x - x.mean(), result.fs, cfg.band_hz, cfg.filter_order)
     return (x - x.mean()) / x.std()
 

@@ -70,6 +70,34 @@ def test_estimate_fs_ignores_a_dropped_frame():
     assert estimate_fs(t) == pytest.approx(30.0)
 
 
+def test_estimate_fs_is_not_fooled_by_bunched_timestamps():
+    # Short and long steps, like real capture: the median alone would say 26 Hz.
+    steps = np.tile([0.011, 0.038, 0.038, 0.038, 0.042], 60)
+    t = np.concatenate(([0.0], np.cumsum(steps)))
+    assert estimate_fs(t) == pytest.approx(1 / steps.mean(), abs=1e-5)
+
+
+@pytest.mark.parametrize("n", [300, 599, 600, 601, 900, 1547])
+def test_uniform_grid_keeps_every_sample_of_an_even_recording(n):
+    # Rounding must not lose the last sample, which changes scores on short clips.
+    t = np.arange(n) / 30.0
+    grid_t, _ = to_uniform_grid(t, t, estimate_fs(t), 0.5)
+    assert grid_t.size == n
+
+
+def test_estimate_fs_gives_an_exact_rate_for_even_timestamps():
+    # Lengths such as int(60 * fs) must not depend on float noise.
+    assert estimate_fs(np.arange(900) / 30.0) == 30.0
+
+
+def test_uniform_grid_tolerates_a_repeated_timestamp():
+    t = np.arange(300) / 30.0
+    t[101] = t[100]
+    grid_t, x = to_uniform_grid(t, 2.0 * t + 1.0, 30.0, 0.5)
+    assert np.all(np.isfinite(x))
+    assert np.allclose(x, 2.0 * grid_t + 1.0)
+
+
 def test_uniform_grid_corrects_uneven_timestamps():
     rng = np.random.default_rng(0)
     t = np.sort(np.arange(600) / 30.0 + rng.uniform(-0.008, 0.008, 600))

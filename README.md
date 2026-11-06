@@ -4,7 +4,7 @@ A Python package that extracts a pulse waveform from ordinary face video, using 
 
 This is the signal core. It stops at the waveform and does not estimate heart rate yet.
 
-**Status:** tested on synthetic video and on real MediaPipe tracking of a portrait with a known pulse added. It has not yet been run on the UBFC-rPPG recordings, so there are no real-person results below.
+**Status:** tested on synthetic video, on real MediaPipe tracking of a portrait with a known pulse added, and on one real UBFC-rPPG recording, where the waveform correlates 0.79 with a contact sensor. One person is a first check, not a measure of accuracy.
 
 ![With brightness flicker inside the pulse band, GREEN follows the flicker while CHROM and POS follow the true pulse](results/figures/waveforms_in_band_brightness.png)
 
@@ -81,24 +81,24 @@ SNR compares the power at the pulse frequency and its second harmonic with every
 
 | Condition (pulse at 1.2 Hz) | GREEN | CHROM | POS |
 |---|---|---|---|
-| Clean | **26.1** (25.2) | 18.6 (17.5) | 18.6 (16.9) |
-| Slow lighting drift | **21.3** (21.0) | 18.2 (17.1) | 18.3 (16.4) |
-| Brightness flicker inside the band | -15.9 (-16.0) | 18.4 (17.1) | **18.5** (16.8) |
-| Specular shine inside the band | -16.8 (-16.9) | 15.6 (15.1) | **18.9** (17.7) |
-| Head sway with tracking noise | **24.8** (23.7) | 18.4 (17.4) | 18.3 (16.9) |
-| No pulse at all (should be below 0) | -6.0 (-8.1) | -5.0 (-8.1) | -5.2 (-8.6) |
+| Clean | **26.1** (25.2) | 18.7 (17.5) | 18.6 (16.9) |
+| Slow lighting drift | **22.0** (21.7) | 18.3 (17.2) | 18.3 (16.5) |
+| Brightness flicker inside the band | -15.9 (-16.0) | **18.5** (17.1) | **18.5** (16.9) |
+| Specular shine inside the band | -16.8 (-16.9) | 15.6 (15.2) | **18.9** (17.6) |
+| Head sway with tracking noise | **24.8** (23.7) | 18.5 (17.5) | 18.4 (17.0) |
+| No pulse at all (should be below 0) | -5.8 (-7.9) | -4.7 (-7.9) | -5.0 (-8.5) |
 
 Real MediaPipe tracking of a swaying portrait with a known 1.3 Hz pulse added (single run):
 
 | Portrait through MediaPipe | GREEN | CHROM | POS |
 |---|---|---|---|
-| SNR (dB) | 11.0 | 16.8 | **17.7** |
+| SNR (dB) | 11.1 | 16.9 | **17.7** |
 
 What these show:
 
 - **Distortion inside the band is the real test.** A band-pass filter can't help there. GREEN falls by about 42 dB, while CHROM and POS stay near their clean scores.
-- **Robustness has a cost.** With nothing disturbing the signal, GREEN is 7.5 dB ahead, because CHROM and POS add noise from the weaker channels.
-- **Real tracking favours CHROM and POS.** In the portrait run GREEN drops to 11.0 dB. The synthetic head-sway test doesn't show this drop because its tracking is close to perfect.
+- **Robustness has a cost.** With nothing disturbing the signal, GREEN is about 7.5 dB ahead, because CHROM and POS add noise from the weaker channels.
+- **Real tracking favours CHROM and POS.** In the portrait run GREEN drops to 11.1 dB. The synthetic head-sway test doesn't show this drop because its tracking is close to perfect.
 - **No false pulse.** With no pulse in the video, every method stays below 0 dB.
 - **Pulse rates across the band work.** From 0.8 to 3.5 Hz every method stays above 14 dB, even at its worst seed.
 
@@ -106,10 +106,10 @@ What these show:
 
 | Synthetic skin tone | GREEN | CHROM | POS |
 |---|---|---|---|
-| Light, full pulse | 28.7 (28.0) | 21.9 (20.9) | 21.6 (19.9) |
-| Medium, full pulse | 26.1 (25.2) | 18.6 (17.5) | 18.6 (16.9) |
-| Dark, full pulse | 20.7 (19.7) | 12.6 (11.3) | 13.4 (11.6) |
-| Dark, half pulse | 14.9 (14.0) | 6.8 (5.7) | 8.2 (6.8) |
+| Light, full pulse | 28.8 (28.0) | 21.9 (20.9) | 21.6 (20.0) |
+| Medium, full pulse | 26.1 (25.2) | 18.7 (17.5) | 18.6 (16.9) |
+| Dark, full pulse | 20.7 (19.7) | 12.6 (11.3) | 13.4 (11.7) |
+| Dark, half pulse | 14.9 (14.0) | 6.9 (5.8) | 8.2 (6.9) |
 
 Performance falls on darker skin, and this is a real weakness rather than a coding error. Sensor noise stays the same while the reflected light and the pulse shrink. CHROM and POS lose the most because they rely on the dim blue channel. The "half pulse" row is a rough stand-in for melanin absorbing light before it reaches the blood, not a measured value.
 
@@ -117,11 +117,24 @@ The skin mask itself kept enough pixels on all three tones.
 
 ### Tests
 
-127 tests pass with `pytest`, including 8 that use the real MediaPipe model. They cover the filter response, the algorithms' cancellation maths, the skin mask, dropped frames, uneven timestamps, a fake dataset on disk, and `--mock` mode.
+139 tests pass with `pytest`, including 8 that use the real MediaPipe model. They cover the filter response, the algorithms' cancellation maths, the skin mask, dropped frames, uneven and repeated timestamps, a fake dataset on disk, and `--mock` mode. None of them needs the dataset.
 
 ### UBFC-rPPG
 
-Not yet run. Once the data is available, `python evaluate.py --ubfc subject1 subject3 subject4` writes per-subject SNR and correlation with the contact sensor to `results/ubfc_results.md`.
+One subject so far (`subject1`, 1,547 frames, about 53 seconds), from `python evaluate.py --ubfc subject1`. Scores are against the contact sensor recorded with the video, and are also in [results/ubfc_results.md](results/ubfc_results.md).
+
+| Method | SNR (dB) | Correlation with sensor | Chance level (median / highest) |
+|---|---|---|---|
+| GREEN | 4.4 | 0.74 | 0.34 / 0.46 |
+| CHROM | 4.4 | 0.77 | 0.35 / 0.45 |
+| POS | **5.8** | **0.79** | 0.36 / 0.48 |
+
+- **The pulse is really there.** Each correlation is well above its chance level, which comes from sliding the same sensor signal out of step. The chance level is not near zero because the search over small time shifts can line up most rhythms.
+- **POS comes first here, but by a small margin.** With one person, that gap says nothing about which method is better in general.
+- **Face tracking held throughout.** All three regions were usable in every frame.
+- **Don't compare these SNRs directly with the synthetic ones.** A real pulse rate drifts, which spreads its power over more frequencies, and real skin adds noise the simulator doesn't have.
+
+The real file also exposed problems synthetic video couldn't. Its timestamps are uneven and include one repeat and one 0.22 s jump, which broke the loader and threw the rate estimate off (26 Hz instead of 29 Hz). Both are fixed. The recorded times are worth keeping: in a one-off check, assuming an even frame rate instead lowered the POS correlation from 0.79 to 0.70.
 
 ## How to run
 
@@ -168,10 +181,10 @@ This project makes no LLM or other API calls, so it needs no API keys.
 
 ## Limitations
 
-- **No real-person results yet.** Synthetic videos follow the same physical model the algorithms assume, so they prove the code is correct, not that it works well on people.
+- **One real person so far.** A single recording shows the pipeline works end to end. It can't show accuracy across people, motion or lighting. Synthetic videos follow the same physical model the algorithms assume, so they prove the code is correct, not that it works well on people.
 - **The portrait test is limited.** It adds a pulse to a still photo of one person and is a single run. It tests tracking and masking, not real skin behaviour.
 - **Skin tone.** Quality falls on darker skin, as shown above. A dataset of 42 videos can't establish that a system works fairly across skin tones.
-- **Ground-truth format is partly unconfirmed.** Row one of `ground_truth.txt` is confirmed by rPPG-Toolbox. The heart-rate and time rows come from a secondary source. The loader validates them and stops if they don't fit, but they still need checking against a real file.
+- **Ground-truth format is checked on one file.** In `subject1`, the three rows have one value per video frame, the time row spans the video in seconds, and the heart-rate row holds plausible values. Other subjects may hold surprises, so the loader still validates each file.
 - **DATASET_2 only.** DATASET_1 is not supported.
 - **Offline only.** Zero-phase filtering needs the whole recording, so this is not real time.
 - **CHROM variant.** Its filtering runs over the whole trace rather than per window, because a 1.6 s window is too short to band-pass at 0.7 Hz. [LEARNING.md](LEARNING.md) explains why.

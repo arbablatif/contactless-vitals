@@ -119,7 +119,7 @@ def plot_spectra(result: RppgResult, path: Path, source: str = COMBINED) -> Path
         x = x[np.isfinite(x)]
         if x.size >= 8:
             freqs, power = signal.welch(
-                x, result.fs, nperseg=min(x.size, int(10 * result.fs)), nfft=int(60 * result.fs)
+                x, result.fs, nperseg=min(x.size, int(10 * result.fs)), nfft=round(60 * result.fs)
             )
             keep = freqs <= 5.0
             ax.plot(freqs[keep], power[keep], color=METHOD_COLOURS[method], lw=1.5)

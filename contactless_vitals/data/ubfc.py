@@ -119,8 +119,9 @@ def read_ground_truth(path: Path) -> GroundTruth:
         raise GroundTruthFormatError(f"{path}: rows differ in length: {lengths}.")
     if not all(np.all(np.isfinite(row)) for row in rows):
         raise GroundTruthFormatError(f"{path}: contains NaN or infinite values.")
-    if np.any(np.diff(rows[2]) <= 0):
-        raise GroundTruthFormatError(f"{path}: row 3 (time) does not always increase.")
+    # A repeated time is allowed: real files contain them. Going backwards is not.
+    if np.any(np.diff(rows[2]) < 0):
+        raise GroundTruthFormatError(f"{path}: row 3 (time) goes backwards.")
     return GroundTruth(ppg=rows[0], hr_bpm=rows[1], t=rows[2])
 
 

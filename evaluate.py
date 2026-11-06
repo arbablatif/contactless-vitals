@@ -26,6 +26,7 @@ from contactless_vitals.extract import cached_rgb_trace, extract_rgb_trace
 from contactless_vitals.pipeline import COMBINED, RppgResult, run_rppg
 from contactless_vitals.quality import (
     correlation_with_lag,
+    shifted_correlations,
     snr_at_known_frequency,
     windowed_snr,
 )
@@ -159,10 +160,11 @@ def run_ubfc(names: list[str], root: Path | None) -> None:
     subjects = {s.name: s for s in ubfc.discover_subjects(root)}
     cfg = SignalConfig()
     lines = [
-        "Median per-window SNR in dB, and correlation with the contact PPG.",
+        "Median per-window SNR in dB, and correlation with the contact PPG. Chance is",
+        "the median and highest correlation with the same sensor signal shifted out of step.",
         "",
-        "| Subject | Method | SNR (dB) | Correlation | Lag (s) |",
-        "|---|---|---|---|---|",
+        "| Subject | Method | SNR (dB) | Correlation | Chance (median / max) | Lag (s) |",
+        "|---|---|---|---|---|---|",
     ]
     for name in names:
         subject = subjects[name]
@@ -179,7 +181,11 @@ def run_ubfc(names: list[str], root: Path | None) -> None:
             x = result.waveforms[COMBINED][method]
             snr = windowed_snr(x, result.t, result.fs, truth.t, truth.hr_bpm / 60.0)
             r, lag = correlation_with_lag(x, reference, result.fs)
-            lines.append(f"| {name} | {method.upper()} | {np.median(snr):.1f} | {r:.2f} | {lag:+.2f} |")
+            chance = shifted_correlations(x, reference, result.fs)
+            lines.append(
+                f"| {name} | {method.upper()} | {np.median(snr):.1f} | {r:.2f} "
+                f"| {np.median(chance):.2f} / {chance.max():.2f} | {lag:+.2f} |"
+            )
     (RESULTS / "ubfc_results.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
